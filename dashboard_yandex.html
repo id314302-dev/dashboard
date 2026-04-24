@@ -26,6 +26,7 @@
   .setup-wrap label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500;}
   .setup-wrap input[type=text]{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:14px;outline:none;background:var(--bg3);color:var(--text);}
   .error-box{background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.3);border-radius:8px;padding:10px 14px;color:#ef9a9a;font-size:13px;margin-bottom:14px;}
+  .warn-box{background:rgba(255,167,38,.10);border:1px solid rgba(255,167,38,.3);border-radius:8px;padding:10px 14px;color:#ffcc80;font-size:13px;margin-bottom:14px;}
   .main{padding:20px 24px;}
   .controls-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
   .tab-group{display:inline-flex;gap:3px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:3px;}
@@ -43,7 +44,6 @@
   .card{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:18px 20px;margin-bottom:14px;}
   .card-title{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
 
-  /* Dropdown checkbox filter */
   .dropdown-wrap{position:relative;}
   .dropdown-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;min-width:180px;justify-content:space-between;}
   .dropdown-btn:hover{border-color:var(--accent);}
@@ -57,7 +57,6 @@
   .dropdown-item .src-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .dropdown-actions{display:flex;gap:6px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 
-  /* Table */
   .src-table{width:100%;border-collapse:collapse;}
   .src-table th{font-size:11px;color:var(--text3);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;white-space:nowrap;}
   .src-table th:hover{color:var(--text2);}
@@ -75,7 +74,6 @@
   .num.green{color:var(--accent);}
   .num.ya{color:var(--ya);}
 
-  /* Groups panel */
   .groups-panel{background:var(--bg3);border-radius:10px;padding:14px 16px;margin-bottom:14px;border:1px solid var(--border);}
   .groups-panel-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
   .group-list{display:flex;flex-wrap:wrap;gap:8px;}
@@ -85,7 +83,6 @@
   .group-chip .chip-del{color:var(--text3);margin-left:2px;font-size:14px;line-height:1;}
   .group-chip .chip-del:hover{color:var(--red);}
 
-  /* Create group modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;}
   .modal-overlay.hidden{display:none;}
   .modal{background:var(--bg2);border-radius:14px;padding:24px;width:420px;max-width:90vw;border:1px solid var(--border);}
@@ -99,7 +96,6 @@
   .modal-src-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;}
   .modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
 
-  /* Chart */
   .chart-wrap{display:flex;align-items:flex-end;gap:4px;height:140px;padding-top:20px;overflow-x:auto;}
   .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:30px;gap:2px;}
   .bar-val{font-size:11px;font-weight:600;color:var(--text);min-height:16px;text-align:center;}
@@ -157,7 +153,6 @@
   </div>
 </div>
 
-<!-- Create group modal -->
 <div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <h3>Создать группу источников</h3>
@@ -177,7 +172,7 @@ let webhookUrl=localStorage.getItem('b24_webhook')||'';
 let currentPeriod='month';
 let allData=null;
 let sortCol='leads',sortDir=-1;
-let selectedSources=new Set(); // пустой = все
+let selectedSources=new Set();
 let groups=JSON.parse(localStorage.getItem('src_groups')||'[]');
 let dropdownOpen=false;
 let dropdownSearch='';
@@ -210,7 +205,22 @@ function getFilter(){
   const d=fmt(now);return{from:d+'00:00:00',to:d+'23:59:59'};
 }
 
-async function post(method,params={}){const r=await fetch(webhookUrl+method+'.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();if(d.error)throw new Error(d.error_description||d.error);return d;}
+async function post(method,params={}){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),30000); // 30s timeout per request
+  try{
+    const r=await fetch(webhookUrl+method+'.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params),signal:controller.signal});
+    clearTimeout(timeout);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.error)throw new Error(d.error_description||d.error);
+    return d;
+  }catch(e){
+    clearTimeout(timeout);
+    if(e.name==='AbortError')throw new Error('Таймаут запроса (30с). Битрикс не ответил.');
+    throw e;
+  }
+}
 async function all(method,params={}){let start=0,arr=[];while(true){const d=await post(method,{...params,start});arr=arr.concat(d.result);if(!d.next||arr.length>=(d.total||0))break;start=d.next;if(arr.length>5000)break;}return arr;}
 
 async function connectAndLoad(){const v=document.getElementById('webhook-input').value.trim();if(!v)return;webhookUrl=v.endsWith('/')?v:v+'/';document.getElementById('setup-error').style.display='none';try{await post('profile');localStorage.setItem('b24_webhook',webhookUrl);showDash();loadData();}catch(e){const el=document.getElementById('setup-error');el.style.display='block';el.textContent='Не удалось подключиться. '+e.message;}}
@@ -218,6 +228,7 @@ async function connectAndLoad(){const v=document.getElementById('webhook-input')
 async function loadData(){
   document.getElementById('dash-content').innerHTML='<div class="loading"><div class="spinner"></div><br>Загружаем данные...</div>';
   const{from,to}=getFilter();
+  let partialWarning='';
   try{
     const srcMap={};
     try{const d=await post('crm.status.list',{filter:{ENTITY_ID:'SOURCE'}});(d.result||[]).forEach(s=>{srcMap[s.STATUS_ID]=s.NAME;});}catch(e){}
@@ -227,15 +238,52 @@ async function loadData(){
 
     if(currentPeriod==='alltime'){
       const now=new Date();
+      const totalYears=now.getFullYear()-2020+1;
+      const errors=[];
+
       for(let y=2020;y<=now.getFullYear();y++){
-        document.getElementById('dash-content').innerHTML=`<div class="loading"><div class="spinner"></div><br>Загружаем ${y} год...</div>`;
+        const yNum=y-2020+1;
+        document.getElementById('dash-content').innerHTML=
+          `<div class="loading"><div class="spinner"></div><br>Загружаем ${y} год... (${yNum} из ${totalYears})</div>`;
         const yf=`${y}-01-01T00:00:00`,yt=`${y}-12-31T23:59:59`;
-        const[yl,yd]=await Promise.all([
-          all('crm.lead.list',{filter:{'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','SOURCE_ID','STATUS_ID','DATE_CREATE']}),
-          all('crm.deal.list',{filter:{'@STAGE_ID':wonStages,'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','OPPORTUNITY','LEAD_ID']}),
-        ]);
-        leads=leads.concat(yl);deals=deals.concat(yd);
+
+        let attempt=0,success=false;
+        while(attempt<2&&!success){
+          try{
+            if(attempt>0){
+              document.getElementById('dash-content').innerHTML=
+                `<div class="loading"><div class="spinner"></div><br>Повтор для ${y}... (попытка ${attempt+1})</div>`;
+              await new Promise(r=>setTimeout(r,2000));
+            }
+            const[yl,yd]=await Promise.all([
+              all('crm.lead.list',{filter:{'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','SOURCE_ID','STATUS_ID','DATE_CREATE']}),
+              all('crm.deal.list',{filter:{'@STAGE_ID':wonStages,'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','OPPORTUNITY','LEAD_ID']}),
+            ]);
+            leads=leads.concat(yl);
+            deals=deals.concat(yd);
+            success=true;
+          }catch(e){
+            attempt++;
+            if(attempt>=2){
+              errors.push(`${y}: ${e.message}`);
+              console.warn(`Не удалось загрузить ${y}:`,e.message);
+            }
+          }
+        }
+
+        // Пауза между годами, чтобы не перегружать API
+        if(y<now.getFullYear()) await new Promise(r=>setTimeout(r,400));
       }
+
+      // Если все годы упали — бросаем ошибку
+      if(errors.length>0&&leads.length===0&&deals.length===0){
+        throw new Error('Не удалось загрузить данные ни за один год. Проверьте соединение или права вебхука.\n\nДетали: '+errors.join('; '));
+      }
+      // Если часть годов упала — предупреждение, но продолжаем
+      if(errors.length>0){
+        partialWarning=`⚠️ Часть данных не загружена: ${errors.join('; ')}`;
+      }
+
     } else {
       [leads,deals]=await Promise.all([
         all('crm.lead.list',{filter:{'>=DATE_CREATE':from,'<=DATE_CREATE':to},select:['ID','SOURCE_ID','STATUS_ID','DATE_CREATE']}),
@@ -280,9 +328,7 @@ async function loadData(){
 
     const groupMode=(currentPeriod==='year'||currentPeriod==='alltime')?'month':'day';
     const timeMap={};
-    // Для alltime и year — группируем по месяцам с годом в ключе
-    // Дополнительно строим yearMap для цветового разделения по годам
-    const yearMap={}; // год → {месяц → count}
+    const yearMap={};
     leads.forEach(l=>{
       const d=new Date(l.DATE_CREATE),pad=n=>String(n).padStart(2,'0');
       const k=groupMode==='month'?`${pad(d.getMonth()+1)}.${d.getFullYear()}`:`${pad(d.getDate())}.${pad(d.getMonth()+1)}`;
@@ -294,11 +340,16 @@ async function loadData(){
       }
     });
 
-    allData={srcStats,leads,deals,timeMap,yearMap,groupMode,srcMap};
+    allData={srcStats,leads,deals,timeMap,yearMap,groupMode,srcMap,partialWarning};
     document.getElementById('last-updated').textContent='Обновлено: '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     renderDashboard();
   }catch(e){
-    document.getElementById('dash-content').innerHTML=`<div class="error-box" style="margin:20px 0;">Ошибка: ${e.message}</div>`;
+    document.getElementById('dash-content').innerHTML=
+      `<div class="error-box" style="margin:20px 0;">
+        <strong>Ошибка загрузки:</strong> ${e.message}
+        <br><br>
+        <span style="font-size:12px;opacity:.8;">Попробуйте обновить страницу или выбрать другой период. Если ошибка повторяется — проверьте вебхук и права доступа.</span>
+      </div>`;
   }
 }
 
@@ -313,7 +364,6 @@ function getSrcColor(name){if(!srcColorMap[name]){srcColorMap[name]=SRC_COLORS[c
 function sortData(rows){return[...rows].sort((a,b)=>sortDir*(( b[sortCol]||0)-(a[sortCol]||0)));}
 function setSort(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=-1;}renderDashboard();}
 
-// Groups
 function openModal(){
   if(!allData)return;
   const sources=Object.keys(allData.srcStats).sort();
@@ -343,7 +393,7 @@ function selectNone(){if(allData)Object.keys(allData.srcStats).forEach(s=>select
 
 function renderDashboard(){
   if(!allData)return;
-  const{srcStats,timeMap,yearMap,groupMode}=allData;
+  const{srcStats,timeMap,yearMap,groupMode,partialWarning}=allData;
 
   const allSrcNames=Object.keys(srcStats).sort();
   const visibleSources=selectedSources.size===0?allSrcNames:allSrcNames.filter(s=>!selectedSources.has(s));
@@ -363,14 +413,20 @@ function renderDashboard(){
   const filterCount=selectedSources.size;
   const dropLabel=filterCount===0?'Все источники':`Скрыто: ${filterCount}`;
 
-  let h=`<div class="metrics">
+  let h='';
+
+  // Предупреждение о частичной загрузке
+  if(partialWarning){
+    h+=`<div class="warn-box">${partialWarning}</div>`;
+  }
+
+  h+=`<div class="metrics">
     <div class="metric"><div class="metric-label">Всего лидов</div><div class="metric-value">${totalLeads}</div></div>
     <div class="metric"><div class="metric-label">Качественных лидов</div><div class="metric-value green">${totalQual}</div><div class="metric-sub">${pct(totalQual,totalLeads)}% конверсия</div></div>
     <div class="metric"><div class="metric-label">Продаж (сделок)</div><div class="metric-value">${totalDeals}</div></div>
     <div class="metric"><div class="metric-label">Выручка</div><div class="metric-value ya" style="font-size:${totalAmount>=1000000?'20px':'24px'}">${fmtMoney(totalAmount)}</div></div>
   </div>`;
 
-  // График — для alltime показываем сгруппированные столбики по месяцам с разными цветами для годов
   if(timeKeys.length>0){
     h+=`<div class="card"><div class="card-title">Лиды по ${groupMode==='month'?'месяцам':'дням'}`;
     if(isMultiYear){
@@ -381,7 +437,6 @@ function renderDashboard(){
     h+=`</div>`;
 
     if(isMultiYear){
-      // Сгруппированные по месяцам (01-12), каждый год своим цветом рядом
       const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
       const monthNames=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
       const maxVal=Math.max(...years.flatMap(y=>months.map(m=>(yearMap[y]&&yearMap[y][m])||0)),1);
@@ -408,7 +463,6 @@ function renderDashboard(){
     h+=`</div>`;
   }
 
-  // Группы
   if(groups.length>0){
     h+=`<div class="groups-panel">
       <div class="groups-panel-title"><span>Группы источников</span><button class="btn-sm" onclick="openModal()">+ Создать группу</button></div>
@@ -419,7 +473,6 @@ function renderDashboard(){
     h+=`</div></div>`;
   }
 
-  // Таблица
   h+=`<div class="card">
     <div class="card-title">
       <span>Источники лидов</span>
@@ -462,7 +515,7 @@ function renderDashboard(){
         <td class="num">${pct(totalQual,totalLeads)}%</td>
       </tr>`;
 
-  // Группы в таблице
+  const groupedSources=new Set(groups.flatMap(g=>g.sources));
   groups.forEach(g=>{
     const gSources=g.sources.filter(s=>visibleSources.includes(s));
     if(gSources.length===0)return;
@@ -492,8 +545,6 @@ function renderDashboard(){
     });
   });
 
-  // Источники не входящие в группы
-  const groupedSources=new Set(groups.flatMap(g=>g.sources));
   const ungrouped=rows.filter(r=>!groupedSources.has(r.name));
   ungrouped.forEach(r=>{
     h+=`<tr>
