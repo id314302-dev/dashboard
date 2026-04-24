@@ -253,12 +253,12 @@ async function loadData(){
             if(attempt>0){
               document.getElementById('dash-content').innerHTML=
                 `<div class="loading"><div class="spinner"></div><br>Повтор для ${y}... (попытка ${attempt+1})</div>`;
-              await new Promise(r=>setTimeout(r,2000));
+              await new Promise(r=>setTimeout(r,3000));
             }
-            const[yl,yd]=await Promise.all([
-              all('crm.lead.list',{filter:{'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','SOURCE_ID','STATUS_ID','DATE_CREATE']}),
-              all('crm.deal.list',{filter:{'@STAGE_ID':wonStages,'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','OPPORTUNITY','LEAD_ID']}),
-            ]);
+            // Загружаем последовательно (не параллельно) чтобы не перегружать rate limit
+            const yl=await all('crm.lead.list',{filter:{'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','SOURCE_ID','STATUS_ID','DATE_CREATE']});
+            await new Promise(r=>setTimeout(r,800));
+            const yd=await all('crm.deal.list',{filter:{'@STAGE_ID':wonStages,'>=DATE_CREATE':yf,'<=DATE_CREATE':yt},select:['ID','OPPORTUNITY','LEAD_ID']});
             leads=leads.concat(yl);
             deals=deals.concat(yd);
             success=true;
@@ -272,7 +272,7 @@ async function loadData(){
         }
 
         // Пауза между годами, чтобы не перегружать API
-        if(y<now.getFullYear()) await new Promise(r=>setTimeout(r,1500));
+        if(y<now.getFullYear()) await new Promise(r=>setTimeout(r,2000));
       }
 
       // Если все годы упали — бросаем ошибку
