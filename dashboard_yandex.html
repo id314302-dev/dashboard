@@ -174,7 +174,16 @@ let currentPeriod='month';
 let allData=null;
 let sortCol='leads',sortDir=-1;
 let selectedSources=new Set();
-let groups=JSON.parse(localStorage.getItem('src_groups')||'[]');
+const DEFAULT_GROUPS=[
+  {name:'Яндекс.Директ',sources:['Электронная почта (почта stdok)','Электронная почта (почта ekogrin1)','Звонок веб-сайт','Max - Max','Whatsapp(сайт) 3Д ограждения','Яндекс.Директ','Сайт Флексби','MAX мессенджер']}
+];
+function loadGroups(){
+  const saved=localStorage.getItem('src_groups');
+  if(saved) return JSON.parse(saved);
+  // Первый запуск — используем дефолтные группы
+  return JSON.parse(JSON.stringify(DEFAULT_GROUPS));
+}
+let groups=loadGroups();
 let dropdownOpen=false;
 let dropdownSearch='';
 let selectedGroup=null; // null = не выбрана группа
@@ -427,6 +436,8 @@ function openModal(){
   const el=document.getElementById('modal-sources');
   el.innerHTML=sources.map(s=>`<div class="modal-src-item"><input type="checkbox" id="mchk_${s.replace(/[^a-z0-9]/gi,'_')}" value="${s}"><span class="src-dot" style="background:${getSrcColor(s)};"></span><label for="mchk_${s.replace(/[^a-z0-9]/gi,'_')}" style="cursor:pointer;color:var(--text2);">${s}</label></div>`).join('');
   document.getElementById('modal-group-name').value='';
+  delete document.getElementById('modal-overlay').dataset.editing;
+  document.querySelector('.modal h3').textContent='Создать группу источников';
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');}
@@ -435,13 +446,38 @@ function saveGroup(){
   if(!name){alert('Введите название группы');return;}
   const checked=[...document.querySelectorAll('#modal-sources input:checked')].map(i=>i.value);
   if(checked.length===0){alert('Выберите хотя бы один источник');return;}
+  const editingName=document.getElementById('modal-overlay').dataset.editing||'';
+  if(editingName) groups=groups.filter(g=>g.name!==editingName);
   groups=groups.filter(g=>g.name!==name);
   groups.push({name,sources:checked});
   localStorage.setItem('src_groups',JSON.stringify(groups));
+  delete document.getElementById('modal-overlay').dataset.editing;
   closeModal();
   renderDashboard();
 }
-function deleteGroup(name){groups=groups.filter(g=>g.name!==name);localStorage.setItem('src_groups',JSON.stringify(groups));renderDashboard();}
+function deleteGroup(name){
+  if(!confirm(`Удалить группу "${name}"?`))return;
+  groups=groups.filter(g=>g.name!==name);
+  localStorage.setItem('src_groups',JSON.stringify(groups));
+  if(selectedGroup===name){selectedGroup=null;selectedSources.clear();}
+  renderDashboard();
+}
+function editGroup(name){
+  if(!allData)return;
+  const g=groups.find(g=>g.name===name);
+  if(!g)return;
+  const sources=Object.keys(allData.srcStats).sort();
+  const el=document.getElementById('modal-sources');
+  el.innerHTML=sources.map(s=>{
+    const id='mchk_'+s.replace(/[^a-z0-9]/gi,'_');
+    const checked=g.sources.includes(s)?'checked':'';
+    return`<div class="modal-src-item"><input type="checkbox" id="${id}" value="${s}" ${checked}><span class="src-dot" style="background:${getSrcColor(s)};"></span><label for="${id}" style="cursor:pointer;color:var(--text2);">${s}</label></div>`;
+  }).join('');
+  document.getElementById('modal-group-name').value=name;
+  document.getElementById('modal-overlay').dataset.editing=name;
+  document.querySelector('.modal h3').textContent='Редактировать группу';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
 
 function toggleDropdown(){dropdownOpen=!dropdownOpen;renderDashboard();}
 function toggleSource(name){if(selectedSources.has(name))selectedSources.delete(name);else selectedSources.add(name);selectedGroup=null;renderDashboard();}
@@ -558,7 +594,7 @@ function renderDashboard(){
       <div class="groups-panel-title"><span>Группы источников</span><button class="btn-sm" onclick="openModal()">+ Создать группу</button></div>
       <div class="group-list">`;
     groups.forEach(g=>{
-      h+=`<div class="group-chip"><span class="chip-dot" style="background:var(--accent);"></span>${g.name} (${g.sources.length})<span class="chip-del" onclick="event.stopPropagation();deleteGroup('${g.name.replace(/'/g,"\\'")}')">×</span></div>`;
+      const esc=g.name.replace(/'/g,"\\'");h+=`<div class="group-chip"><span class="chip-dot" style="background:var(--accent);"></span>${g.name} (${g.sources.length})<span class="chip-del" style="margin-left:4px;color:var(--text2);font-size:12px;" onclick="event.stopPropagation();editGroup('${esc}')">✏️</span><span class="chip-del" onclick="event.stopPropagation();deleteGroup('${esc}')">×</span></div>`;
     });
     h+=`</div></div>`;
   }
