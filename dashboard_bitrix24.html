@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дашборд отдела продаж — ЭкоБилд</title>
+<style>
+  :root {
+    --bg:#0f1117;--bg2:#1a1d27;--bg3:#222636;--border:#2e3247;
+    --text:#e8eaf0;--text2:#8b90a7;--text3:#555b72;
+    --accent:#4caf50;--red:#ef5350;--green:#4caf50;--orange:#ffa726;--yellow:#ffeb3b;
+  }
+  [data-theme="light"]{--bg:#f4f5f7;--bg2:#fff;--bg3:#f0f1f5;--border:#e0e3ec;--text:#1a1d27;--text2:#6b7280;--text3:#9ca3af;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;transition:background .2s,color .2s;}
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;}
+  .header-logo{font-size:17px;font-weight:700;}
+  .header-logo span{color:var(--accent);}
+  .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .last-updated{font-size:12px;color:var(--text2);}
+  .btn{padding:7px 16px;border-radius:8px;border:1px solid var(--border);cursor:pointer;font-size:13px;font-weight:500;background:var(--bg3);color:var(--text);transition:background .15s;}
+  .btn:hover{background:var(--border);}
+  .btn-green{background:var(--accent);color:#fff;border-color:var(--accent);width:100%;padding:11px;font-size:14px;}
+  .setup-wrap{max-width:500px;margin:80px auto;background:var(--bg2);border-radius:14px;padding:32px;border:1px solid var(--border);}
+  .setup-wrap h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+  .setup-wrap p{color:var(--text2);font-size:13px;margin-bottom:22px;line-height:1.6;}
+  .setup-wrap label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500;}
+  .setup-wrap input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:14px;outline:none;background:var(--bg3);color:var(--text);}
+  .setup-wrap input:focus{border-color:var(--accent);}
+  .error-box{background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.3);border-radius:8px;padding:10px 14px;color:#ef9a9a;font-size:13px;margin-bottom:14px;}
+  .main{padding:20px 24px;}
+  .controls-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab-group{display:inline-flex;gap:3px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:3px;}
+  .tab{padding:6px 14px;border-radius:7px;border:none;background:transparent;font-size:13px;cursor:pointer;color:var(--text2);font-weight:500;transition:all .15s;}
+  .tab.active{background:var(--accent);color:#fff;}
+  .date-input{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;outline:none;}
+  .date-input:focus{border-color:var(--accent);}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  .metric{background:var(--bg2);border-radius:12px;padding:16px 18px;border:1px solid var(--border);}
+  .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;}
+  .metric-value{font-size:30px;font-weight:700;line-height:1;}
+  .metric-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+  .metric-value.red{color:var(--red);}
+  .metric-value.green{color:var(--green);}
+  .metric-value.orange{color:var(--orange);}
+  .metric-value.yellow{color:var(--yellow);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .card{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:18px 20px;}
+  .card-title{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+  .card-title.alert{color:var(--red);}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .row-name{flex:1;font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row-count{font-size:13px;font-weight:600;min-width:26px;text-align:right;}
+  .row-pct{font-size:11px;color:var(--text3);min-width:34px;text-align:right;}
+  .bar-wrap{width:80px;height:5px;background:var(--bg3);border-radius:3px;flex-shrink:0;}
+  .bar-wrap2{width:70px;height:5px;background:var(--bg3);border-radius:3px;flex-shrink:0;}
+  .bar{height:5px;border-radius:3px;}
+  .section-title{font-size:11px;font-weight:600;color:var(--text3);margin:20px 0 10px;text-transform:uppercase;letter-spacing:.8px;}
+  .manager-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:20px;}
+  .manager-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:11px;}
+  .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+  .manager-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .manager-stats{font-size:11px;color:var(--text2);margin-top:2px;}
+  .calls-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .calls-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;}
+  .call-stat{background:var(--bg3);border-radius:9px;padding:14px;text-align:center;}
+  .call-stat-val{font-size:24px;font-weight:700;}
+  .call-stat-label{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.4;}
+  .call-stat.alert{background:rgba(239,83,80,.1);border:1px solid rgba(239,83,80,.2);}
+  .call-stat.warn{background:rgba(255,167,38,.1);border:1px solid rgba(255,167,38,.2);}
+  /* Leads without call table */
+  .no-call-table{width:100%;border-collapse:collapse;}
+  .no-call-table th{font-size:11px;color:var(--text3);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;}
+  .no-call-table td{font-size:12px;color:var(--text2);padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .no-call-table tr:last-child td{border-bottom:none;}
+  .no-call-table tr:hover td{background:var(--bg3);}
+  .badge-red{background:rgba(239,83,80,.15);color:#ef9a9a;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;}
+  .badge-orange{background:rgba(255,167,38,.15);color:#ffd54f;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;}
+  .pipeline-wrap{margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .pbadge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s;}
+  .pbadge.pa{background:#6a1b9a;border-color:#6a1b9a;color:#fff;}
+  .pbadge.pf{background:#1565c0;border-color:#1565c0;color:#fff;}
+  .pbadge.pp{background:#2e7d32;border-color:#2e7d32;color:#fff;}
+  .empty{text-align:center;padding:24px;color:var(--text3);font-size:13px;}
+  .loading{text-align:center;padding:60px;color:var(--text2);font-size:14px;}
+  .spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hint{font-size:11px;color:var(--text3);margin-top:10px;font-style:italic;}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}.main{padding:12px;}.metrics{grid-template-columns:repeat(2,1fr);}.calls-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-logo">Эко<span>Билд</span> · Дашборд продаж</div>
+  <div class="header-right">
+    <span class="last-updated" id="last-updated"></span>
+    <button class="btn" style="font-size:16px;padding:5px 10px;" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="btn" onclick="showSetup()" id="btn-disc" style="display:none;">Сменить вебхук</button>
+    <button class="btn" onclick="loadData()" id="btn-ref" style="display:none;">↺ Обновить</button>
+  </div>
+</div>
+
+<div id="setup-view">
+  <div class="setup-wrap">
+    <h2>Подключение к Битрикс24</h2>
+    <p>Вставьте URL входящего вебхука с правами CRM, Телефония и Пользователи.</p>
+    <div id="setup-error" class="error-box" style="display:none;"></div>
+    <label>URL вебхука</label>
+    <input type="text" id="webhook-input" placeholder="https://b24-xxx.bitrix24.ru/rest/1/xxxxxxxx/"/>
+    <button class="btn btn-green" onclick="connectAndLoad()">Подключиться</button>
+  </div>
+</div>
+
+<div id="dashboard-view" style="display:none;">
+  <div class="main">
+    <div class="controls-row">
+      <div class="tab-group" id="period-tabs">
+        <button class="tab active" onclick="setPeriod('today',this)">Сегодня</button>
+        <button class="tab" onclick="setPeriod('yesterday',this)">Вчера</button>
+        <button class="tab" onclick="setPeriod('week',this)">Неделя</button>
+        <button class="tab" onclick="setPeriod('month',this)">Месяц</button>
+        <button class="tab" onclick="setPeriod('custom',this)">📅 Дата</button>
+      </div>
+      <input type="date" id="custom-date" class="date-input" style="display:none;" onchange="onCustomDate()"/>
+    </div>
+    <div id="dash-content"><div class="loading"><div class="spinner"></div><br>Загружаем данные...</div></div>
+  </div>
+</div>
+
+<script>
+let webhookUrl=localStorage.getItem('b24_webhook')||'';
+let currentPeriod='today',currentPipeline='all';
+let allData=null,usersCache={};
+
+// Theme
+const savedTheme=localStorage.getItem('b24_theme')||'dark';
+document.documentElement.setAttribute('data-theme',savedTheme);
+document.getElementById('theme-btn').textContent=savedTheme==='dark'?'☀️':'🌙';
+function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme');const next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);localStorage.setItem('b24_theme',next);document.getElementById('theme-btn').textContent=next==='dark'?'☀️':'🌙';}
+
+const STAGE_MAP={
+  'NEW':'Новая','IN_PROCESS':'В работе','PROCESSED':'Обработан','JUNK':'Некачественный',
+  'CONVERTED':'Конвертирован','WON':'Успешно завершён','LOSE':'Провалено',
+  'EXECUTING':'Исполнение','PREPAYMENT_INVOICE':'Счёт на предоплату',
+  'PREPARATION':'Подготовка КП','PREPAYMENT':'Предоплата',
+  'FINAL_INVOICE':'Финальный счёт','SENT':'Отправлено','WAITING':'Ожидание',
+};
+const SRC_MAP={
+  '1':'Звонок','2':'Сайт','3':'Email','4':'Мероприятие','5':'Реклама',
+  '6':'Партнёр','7':'Другое','8':'Личная продажа','9':'ВКонтакте','10':'Форма',
+  'CALL':'Звонок','WEB':'Сайт','EMAIL':'Email','PARTNER':'Партнёр',
+  'SELF':'Личная продажа','OTHER':'Другое','AUCTION':'Аукцион',
+};
+function stageRu(id){if(!id)return'Не указана';const k=id.toUpperCase().replace(/^C\d+:/,'');return STAGE_MAP[k]||id.replace(/^C\d+:/i,'').replace(/_/g,' ').toLowerCase();}
+function srcRu(src){if(!src)return'Не указан';if(SRC_MAP[src])return SRC_MAP[src];const s=src.toLowerCase();if(s.includes('yandex')||s.includes('direct')||s.includes('яндекс'))return'Яндекс.Директ';if(s.includes('auction')||s.includes('аукцион'))return'Аукцион';if(s==='call'||s.includes('phone')||s.includes('zvon')||s.includes('telephon'))return'Звонок';if(s.includes('web')||s.includes('form')||s.includes('site'))return'Сайт';if(s.includes('vk')||s.includes('вконт'))return'ВКонтакте';if(s.includes('partner'))return'Партнёр';return src;}
+
+if(webhookUrl){document.getElementById('webhook-input').value=webhookUrl;showDash();loadData();}
+
+function showDash(){document.getElementById('setup-view').style.display='none';document.getElementById('dashboard-view').style.display='block';document.getElementById('btn-disc').style.display='inline-block';document.getElementById('btn-ref').style.display='inline-block';}
+function showSetup(){document.getElementById('setup-view').style.display='block';document.getElementById('dashboard-view').style.display='none';document.getElementById('btn-disc').style.display='none';document.getElementById('btn-ref').style.display='none';}
+
+function setPeriod(p,el){
+  currentPeriod=p;
+  document.querySelectorAll('#period-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const dateInput=document.getElementById('custom-date');
+  if(p==='custom'){
+    dateInput.style.display='block';
+    if(!dateInput.value){const now=new Date();dateInput.value=now.toISOString().slice(0,10);}
+    loadData();
+  } else {
+    dateInput.style.display='none';
+    loadData();
+  }
+}
+function onCustomDate(){if(currentPeriod==='custom')loadData();}
+function setPipeline(p){currentPipeline=p;renderDashboard();}
+
+function getFilter(){
+  const now=new Date(),pad=n=>String(n).padStart(2,'0');
+  const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T`;
+  if(currentPeriod==='today'){const d=fmt(now);return{from:d+'00:00:00',to:d+'23:59:59',label:'Сегодня'};}
+  if(currentPeriod==='yesterday'){const y=new Date(now);y.setDate(now.getDate()-1);const d=fmt(y);return{from:d+'00:00:00',to:d+'23:59:59',label:'Вчера'};}
+  if(currentPeriod==='week'){const day=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-day+1);return{from:fmt(mon)+'00:00:00',to:fmt(now)+'23:59:59',label:'Эта неделя'};}
+  if(currentPeriod==='custom'){const v=document.getElementById('custom-date').value;if(v){const parts=v.split('-');const label=`${parts[2]}.${parts[1]}.${parts[0]}`;return{from:v+'T00:00:00',to:v+'T23:59:59',label};}return{from:fmt(now)+'00:00:00',to:fmt(now)+'23:59:59',label:'Сегодня'};}
+  return{from:`${now.getFullYear()}-${pad(now.getMonth()+1)}-01T00:00:00`,to:fmt(now)+'23:59:59',label:'Этот месяц'};
+}
+
+async function post(method,params={}){
+  const r=await fetch(webhookUrl+method+'.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(d.error)throw new Error(d.error_description||d.error);
+  return d;
+}
+async function all(method,params={}){
+  let start=0,arr=[];
+  while(true){const d=await post(method,{...params,start});arr=arr.concat(d.result);if(!d.next||arr.length>=(d.total||0))break;start=d.next;if(arr.length>1000)break;}
+  return arr;
+}
+
+async function loadUsers(){try{const u=await all('user.get',{select:['ID','NAME','LAST_NAME']});u.forEach(x=>{usersCache[x.ID]=((x.NAME||'')+' '+(x.LAST_NAME||'')).trim()||'ID '+x.ID;});}catch(e){}}
+async function loadSources(){try{const d=await post('crm.status.list',{filter:{ENTITY_ID:'SOURCE'}});(d.result||[]).forEach(s=>{SRC_MAP[s.STATUS_ID]=s.NAME;});}catch(e){}}
+async function loadStages(){try{const cats=await post('crm.dealcategory.list');for(const cat of[{ID:0},...(cats.result||[])]){const sd=await post('crm.dealcategory.stages.list',{id:cat.ID});(sd.result||[]).forEach(s=>{if(s.STATUS_ID&&s.NAME)STAGE_MAP[s.STATUS_ID.toUpperCase()]=s.NAME;});}}catch(e){}}
+
+async function connectAndLoad(){
+  const v=document.getElementById('webhook-input').value.trim();
+  if(!v)return;
+  webhookUrl=v.endsWith('/')?v:v+'/';
+  document.getElementById('setup-error').style.display='none';
+  try{await post('profile');localStorage.setItem('b24_webhook',webhookUrl);showDash();loadData();}
+  catch(e){const el=document.getElementById('setup-error');el.style.display='block';el.textContent='Не удалось подключиться. '+e.message;}
+}
+
+async function loadData(){
+  document.getElementById('dash-content').innerHTML='<div class="loading"><div class="spinner"></div><br>Загружаем данные...</div>';
+  const{from,to}=getFilter();
+  try{
+    await Promise.all([loadUsers(),loadSources(),loadStages()]);
+    const[leads,deals,calls,cats,activities]=await Promise.all([
+      all('crm.lead.list',{filter:{'>=DATE_CREATE':from,'<=DATE_CREATE':to},select:['ID','TITLE','SOURCE_ID','STATUS_ID','ASSIGNED_BY_ID','DATE_CREATE','ASSIGNED_BY_NAME','PHONE']}),
+      all('crm.deal.list',{filter:{'>=DATE_CREATE':from,'<=DATE_CREATE':to},select:['ID','TITLE','STAGE_ID','CATEGORY_ID','ASSIGNED_BY_ID','DATE_CREATE','ASSIGNED_BY_NAME']}),
+      all('voximplant.statistic.get',{filter:{'>=CALL_START_DATE':from,'<=CALL_START_DATE':to},select:['ID','CALL_TYPE','CALL_DURATION','CALL_START_DATE','PORTAL_USER_ID','CALL_FAILED_CODE','PORTAL_NUMBER','PHONE_NUMBER']}).catch(()=>[]),
+      post('crm.dealcategory.list').then(d=>d.result).catch(()=>[]),
+      // Загружаем дела (звонки) по лидам за период
+      all('crm.activity.list',{filter:{'>=DEADLINE':from,'<=DEADLINE':to,'TYPE_ID':2,'OWNER_TYPE_ID':1},select:['ID','OWNER_ID','DEADLINE','COMPLETED','SUBJECT']}).catch(()=>[])
+    ]);
+    allData={leads,deals,calls,cats,activities};
+    document.getElementById('last-updated').textContent='Обновлено: '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    renderDashboard();
+  }catch(e){
+    document.getElementById('dash-content').innerHTML=`<div class="error-box" style="margin:20px 0;">Ошибка: ${e.message}</div>`;
+  }
+}
+
+function getCatId(kw){if(!allData)return null;const f=(allData.cats||[]).find(c=>c.NAME&&c.NAME.toLowerCase().includes(kw));return f?String(f.ID):null;}
+function filterDeals(deals){
+  if(currentPipeline==='all')return deals;
+  const fId=getCatId('огражд'),pId=getCatId('площад');
+  if(currentPipeline==='fence')return fId?deals.filter(d=>String(d.CATEGORY_ID)===fId):deals;
+  if(currentPipeline==='play')return pId?deals.filter(d=>String(d.CATEGORY_ID)===pId):deals;
+  return deals;
+}
+function uName(id,fn){if(fn&&fn.trim())return fn.trim();if(usersCache[id])return usersCache[id];return'ID '+id;}
+function initials(n){if(!n||n.startsWith('ID '))return n.slice(0,2).toUpperCase();const p=n.trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
+const AB=['#1a237e','#1b5e20','#4a148c','#880e4f','#bf360c','#006064'];
+const AF=['#90caf9','#a5d6a7','#ce93d8','#f48fb1','#ffccbc','#80deea'];
+function avSt(n){let h=0;for(let c of(n||''))h=(h*31+c.charCodeAt(0))&0xffff;const i=h%AB.length;return`background:${AB[i]};color:${AF[i]};`;}
+const SC=['#42a5f5','#66bb6a','#ffa726','#ef5350','#ab47bc','#26c6da','#8d6e63'];
+const SRC_COLORS={'Яндекс.Директ':'#ef5350','Звонок':'#42a5f5','Аукцион':'#ffa726','Сайт':'#66bb6a','Email':'#ab47bc','Партнёр':'#26c6da'};
+
+function isTechnicalCall(c){const pn=c.PORTAL_NUMBER||'';if(pn==='office')return true;if(pn.startsWith('REST_APP'))return true;if(/^\d{3,}$/.test(pn))return true;return false;}
+function isMissed(c){return c.CALL_FAILED_CODE==='304';}
+function isInbound(c){return c.CALL_TYPE==='1'||c.CALL_TYPE===1;}
+function isOutbound(c){return c.CALL_TYPE==='2'||c.CALL_TYPE===2;}
+
+function fmtDate(str){
+  if(!str)return'—';
+  const d=new Date(str);
+  return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderDashboard(){
+  if(!allData)return;
+  const{from,to,label}=getFilter();
+  const{leads}=allData,calls=allData.calls;
+  const deals=filterDeals(allData.deals);
+
+  const realCalls=calls.filter(c=>!isTechnicalCall(c));
+  const inbound=realCalls.filter(isInbound);
+  const outbound=realCalls.filter(isOutbound);
+  const inboundMissed=inbound.filter(isMissed);
+  const outboundNoAnswer=outbound.filter(isMissed);
+  const answered=realCalls.filter(c=>!isMissed(c));
+  const avgDur=answered.length?Math.round(answered.reduce((s,c)=>s+(parseInt(c.CALL_DURATION)||0),0)/answered.length):0;
+  const avgMin=Math.floor(avgDur/60),avgSec=String(avgDur%60).padStart(2,'0');
+
+  // Лиды без звонка в тот же день
+  // Логика: у лида есть телефон → проверяем был ли реальный звонок на этот номер
+  // Нормализуем номер — оставляем только цифры, берём последние 10
+  function normalizePhone(p){if(!p)return'';return p.replace(/\D/g,'').slice(-10);}
+
+  // Собираем все номера из реальных звонков за период
+  const calledNumbers=new Set();
+  realCalls.forEach(c=>{
+    if(c.PHONE_NUMBER) calledNumbers.add(normalizePhone(c.PHONE_NUMBER));
+  });
+
+  const leadsWithoutCall=leads.filter(l=>{
+    // Достаём телефоны лида
+    const phones=[];
+    if(Array.isArray(l.PHONE)){l.PHONE.forEach(p=>{if(p.VALUE)phones.push(normalizePhone(p.VALUE));});}
+    // Если у лида нет телефона — не считаем как "без звонка"
+    if(phones.length===0)return false;
+    // Если хотя бы один номер был в звонках — считаем что позвонили
+    if(phones.some(p=>p&&calledNumbers.has(p)))return false;
+    return true;
+  });
+
+  const srcMap={};
+  leads.forEach(l=>{const s=srcRu(l.SOURCE_ID);srcMap[s]=(srcMap[s]||0)+1;});
+  const srcE=Object.entries(srcMap).sort((a,b)=>b[1]-a[1]);
+  const tL=leads.length||1;
+
+  const stMap={};
+  deals.forEach(d=>{const n=STAGE_MAP[d.STAGE_ID.toUpperCase()]||stageRu(d.STAGE_ID);stMap[n]=(stMap[n]||0)+1;});
+  const stE=Object.entries(stMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxSt=Math.max(...stE.map(e=>e[1]),1);
+
+  const mgMap={};
+  deals.forEach(d=>{const n=uName(d.ASSIGNED_BY_ID,d.ASSIGNED_BY_NAME);if(!mgMap[n])mgMap[n]={deals:0,leads:0};mgMap[n].deals++;});
+  leads.forEach(l=>{const n=uName(l.ASSIGNED_BY_ID,l.ASSIGNED_BY_NAME);if(!mgMap[n])mgMap[n]={deals:0,leads:0};mgMap[n].leads++;});
+  const managers=Object.entries(mgMap).sort((a,b)=>(b[1].deals+b[1].leads)-(a[1].deals+a[1].leads));
+
+  let h=`<div class="pipeline-wrap">
+    <span style="font-size:12px;color:var(--text2);">Воронка:</span>
+    <span class="pbadge ${currentPipeline==='all'?'pa':''}" onclick="setPipeline('all')">Все</span>
+    <span class="pbadge ${currentPipeline==='fence'?'pf':''}" onclick="setPipeline('fence')">3D ограждение</span>
+    <span class="pbadge ${currentPipeline==='play'?'pp':''}" onclick="setPipeline('play')">Площадки</span>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Новых лидов</div><div class="metric-value">${leads.length}</div></div>
+    <div class="metric"><div class="metric-label" style="color:var(--red);">⚠️ Без звонка в день</div><div class="metric-value ${leadsWithoutCall.length>0?'orange':'green'}">${leadsWithoutCall.length}</div><div class="metric-sub">из ${leads.length} лидов</div></div>
+    <div class="metric"><div class="metric-label">Новых сделок</div><div class="metric-value">${deals.length}</div></div>
+    <div class="metric"><div class="metric-label">Входящих звонков</div><div class="metric-value">${inbound.length}</div><div class="metric-sub">${inbound.length-inboundMissed.length} отвечено</div></div>
+    <div class="metric"><div class="metric-label">Не взяли трубку ⚠️</div><div class="metric-value ${inboundMissed.length>0?'red':'green'}">${inboundMissed.length}</div></div>
+    <div class="metric"><div class="metric-label">Ср. длит. звонка</div><div class="metric-value" style="font-size:22px;">${avgMin}:${avgSec}</div></div>
+  </div>`;
+
+  // Лиды без звонка — таблица
+  if(leadsWithoutCall.length>0){
+    h+=`<div class="card" style="margin-bottom:14px;border-color:rgba(255,167,38,.3);">
+      <div class="card-title alert">⚠️ Лиды без звонка в день поступления (${leadsWithoutCall.length})</div>
+      <table class="no-call-table">
+        <thead><tr><th>Лид</th><th>Источник</th><th>Ответственный</th><th>Поступил</th></tr></thead>
+        <tbody>`;
+    leadsWithoutCall.slice(0,20).forEach(l=>{
+      const src=srcRu(l.SOURCE_ID);
+      const name=uName(l.ASSIGNED_BY_ID,l.ASSIGNED_BY_NAME);
+      const title=l.TITLE||'Без названия';
+      h+=`<tr>
+        <td style="color:var(--text);">${title}</td>
+        <td><span class="badge-orange">${src}</span></td>
+        <td>${name}</td>
+        <td>${fmtDate(l.DATE_CREATE)}</td>
+      </tr>`;
+    });
+    if(leadsWithoutCall.length>20)h+=`<tr><td colspan="4" style="text-align:center;color:var(--text3);">...и ещё ${leadsWithoutCall.length-20}</td></tr>`;
+    h+=`</tbody></table>
+      <div class="hint">Это лиды за выбранный период, по которым не зафиксировано дело-звонок в тот же день.</div>
+    </div>`;
+  } else if(leads.length>0){
+    h+=`<div class="card" style="margin-bottom:14px;border-color:rgba(76,175,80,.3);">
+      <div class="card-title" style="color:var(--green);">✅ Все лиды прозвонены в день поступления</div>
+    </div>`;
+  }
+
+  // Sources + Stages
+  h+=`<div class="grid2">
+    <div class="card"><div class="card-title"><span class="dot" style="background:#ef5350;"></span>Источники лидов</div>`;
+  if(srcE.length){srcE.forEach(([s,c])=>{const p=Math.round(c/tL*100),w=Math.round(c/tL*80),col=SRC_COLORS[s]||'#888';
+    h+=`<div class="row"><div class="row-name">${s}</div><div class="bar-wrap"><div class="bar" style="width:${w}px;background:${col};"></div></div><div class="row-count">${c}</div><div class="row-pct">${p}%</div></div>`;
+  });}else{h+=`<div class="empty">Нет лидов за период</div>`;}
+
+  h+=`</div><div class="card"><div class="card-title"><span class="dot" style="background:#42a5f5;"></span>Сделки по стадиям</div>`;
+  if(stE.length){stE.forEach(([s,c],i)=>{const w=Math.round(c/maxSt*70);
+    h+=`<div class="row"><div class="row-name" title="${s}">${s}</div><div class="bar-wrap2"><div class="bar" style="width:${w}px;background:${SC[i%SC.length]};"></div></div><div class="row-count">${c}</div></div>`;
+  });}else{h+=`<div class="empty">Нет сделок за период</div>`;}
+  h+=`</div></div>`;
+
+  // Managers
+  h+=`<div class="section-title">Менеджеры и операторы</div><div class="manager-grid">`;
+  if(managers.length){managers.forEach(([n,s])=>{
+    h+=`<div class="manager-card"><div class="avatar" style="${avSt(n)}">${initials(n)}</div><div style="min-width:0;"><div class="manager-name">${n}</div><div class="manager-stats">Сделок: ${s.deals} · Лидов: ${s.leads}</div></div></div>`;
+  });}else{h+=`<div class="empty" style="grid-column:1/-1;">Нет данных за период</div>`;}
+  h+=`</div>`;
+
+  // Calls detail
+  if(realCalls.length>0){
+    h+=`<div class="section-title">Детали звонков</div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="calls-grid">
+        <div class="call-stat"><div class="call-stat-val">${inbound.length}</div><div class="call-stat-label">Входящих всего</div></div>
+        <div class="call-stat ${inboundMissed.length>0?'alert':''}"><div class="call-stat-val" style="${inboundMissed.length>0?'color:var(--red);':''}">${inboundMissed.length}</div><div class="call-stat-label">Клиент звонил — не взяли</div></div>
+        <div class="call-stat"><div class="call-stat-val">${avgMin}:${avgSec}</div><div class="call-stat-label">Ср. длительность</div></div>
+      </div>
+      <div class="calls-grid2">
+        <div class="call-stat warn"><div class="call-stat-val" style="color:var(--orange);">${outbound.length}</div><div class="call-stat-label">Исходящих (обзвон)</div></div>
+        <div class="call-stat"><div class="call-stat-val" style="color:var(--text2);">${outboundNoAnswer.length}</div><div class="call-stat-label">Клиент не ответил</div></div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('dash-content').innerHTML=h;
+}
+</script>
+</body>
+</html>
