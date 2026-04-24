@@ -272,7 +272,7 @@ async function loadData(){
         }
 
         // Пауза между годами, чтобы не перегружать API
-        if(y<now.getFullYear()) await new Promise(r=>setTimeout(r,400));
+        if(y<now.getFullYear()) await new Promise(r=>setTimeout(r,1500));
       }
 
       // Если все годы упали — бросаем ошибку
