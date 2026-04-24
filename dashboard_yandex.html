@@ -329,21 +329,7 @@ async function loadData(){
       srcStats[name].amount+=parseFloat(d.OPPORTUNITY)||0;
     });
 
-    const groupMode=(currentPeriod==='year'||currentPeriod==='alltime')?'month':'day';
-    const timeMap={};
-    const yearMap={};
-    leads.forEach(l=>{
-      const d=new Date(l.DATE_CREATE),pad=n=>String(n).padStart(2,'0');
-      const k=groupMode==='month'?`${pad(d.getMonth()+1)}.${d.getFullYear()}`:`${pad(d.getDate())}.${pad(d.getMonth()+1)}`;
-      timeMap[k]=(timeMap[k]||0)+1;
-      if(groupMode==='month'){
-        const yr=d.getFullYear(),mo=pad(d.getMonth()+1);
-        if(!yearMap[yr])yearMap[yr]={};
-        yearMap[yr][mo]=(yearMap[yr][mo]||0)+1;
-      }
-    });
-
-    allData={srcStats,leads,deals,timeMap,yearMap,groupMode,srcMap,partialWarning};
+    allData={srcStats,leads,deals,srcMap,partialWarning};
     document.getElementById('last-updated').textContent='Обновлено: '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     renderDashboard();
   }catch(e){
