@@ -177,6 +177,7 @@ let selectedSources=new Set();
 let groups=JSON.parse(localStorage.getItem('src_groups')||'[]');
 let dropdownOpen=false;
 let dropdownSearch='';
+let selectedGroup=null; // null = не выбрана группа
 let chartGranularity='auto'; // auto|day|week|month|year
 let chartMetric='leads'; // leads|qualLeads|deals
 
@@ -443,9 +444,21 @@ function saveGroup(){
 function deleteGroup(name){groups=groups.filter(g=>g.name!==name);localStorage.setItem('src_groups',JSON.stringify(groups));renderDashboard();}
 
 function toggleDropdown(){dropdownOpen=!dropdownOpen;renderDashboard();}
-function toggleSource(name){if(selectedSources.has(name))selectedSources.delete(name);else selectedSources.add(name);renderDashboard();}
-function selectAll(){selectedSources.clear();renderDashboard();}
-function selectNone(){if(allData)Object.keys(allData.srcStats).forEach(s=>selectedSources.add(s));renderDashboard();}
+function toggleSource(name){if(selectedSources.has(name))selectedSources.delete(name);else selectedSources.add(name);selectedGroup=null;renderDashboard();}
+function selectAll(){selectedSources.clear();selectedGroup=null;renderDashboard();}
+function selectNone(){if(allData)Object.keys(allData.srcStats).forEach(s=>selectedSources.add(s));selectedGroup=null;renderDashboard();}
+function selectGroup(name){
+  const g=groups.find(g=>g.name===name);
+  if(!g||!allData)return;
+  // Скрываем все, кроме источников группы
+  selectedSources.clear();
+  Object.keys(allData.srcStats).forEach(s=>{
+    if(!g.sources.includes(s)) selectedSources.add(s);
+  });
+  selectedGroup=name;
+  dropdownOpen=false;
+  renderDashboard();
+}
 
 function renderDashboard(){
   if(!allData)return;
@@ -477,7 +490,7 @@ function renderDashboard(){
   const isMultiYear=years.length>1&&groupMode==='month';
 
   const filterCount=selectedSources.size;
-  const dropLabel=filterCount===0?'Все источники':`Скрыто: ${filterCount}`;
+  const dropLabel=selectedGroup?`📁 ${selectedGroup}`:filterCount===0?'Все источники':`Скрыто: ${filterCount}`;
 
   let h='';
 
@@ -498,7 +511,7 @@ function renderDashboard(){
   const metricLabels={'leads':'Лиды','qualLeads':'Квал.лиды','deals':'Продажи'};
 
   if(timeKeys.length>0){
-    const srcFilterLabel=selectedSources.size===0?'Все источники':`${Object.keys(allData.srcStats).filter(s=>!selectedSources.has(s)).length} источн.`;
+    const srcFilterLabel=selectedGroup?`📁 ${selectedGroup}`:selectedSources.size===0?'Все источники':`${Object.keys(allData.srcStats).filter(s=>!selectedSources.has(s)).length} источн.`;
     let yearLegend='';
     if(isMultiYear&&groupMode==='month'){yearLegend=`<span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">${years.map((y,i)=>`<span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${YEAR_COLORS[i%YEAR_COLORS.length]};"></span>${y}</span>`).join('')}</span>`;}
     h+=`<div class="card">
@@ -565,6 +578,19 @@ function renderDashboard(){
               <button class="btn-sm" onclick="event.stopPropagation();selectAll()">Показать все</button>
               <button class="btn-sm" onclick="event.stopPropagation();selectNone()">Скрыть все</button>
             </div>`;
+  if(groups.length>0){
+    h+=`<div style="font-size:11px;color:var(--text3);padding:2px 8px 4px;text-transform:uppercase;letter-spacing:.5px;">Группы</div>`;
+    groups.forEach(g=>{
+      const isActive=selectedGroup===g.name;
+      h+=`<div class="dropdown-item${isActive?' active':''}" style="${isActive?'background:rgba(76,175,80,.15);color:var(--accent);':''}" onclick="event.stopPropagation();selectGroup('${g.name.replace(/'/g,"\'")}')">
+        <span style="font-size:13px;">📁</span>
+        <span style="flex:1;">${g.name}</span>
+        <span style="font-size:11px;color:var(--text3);">${g.sources.length} ист.</span>
+      </div>`;
+    });
+    h+=`<div style="border-top:1px solid var(--border);margin:4px 0;"></div>`;
+    h+=`<div style="font-size:11px;color:var(--text3);padding:2px 8px 4px;text-transform:uppercase;letter-spacing:.5px;">Источники</div>`;
+  }
   allSrcNames.filter(s=>!dropdownSearch||s.toLowerCase().includes(dropdownSearch.toLowerCase())).forEach(s=>{
     const isHidden=selectedSources.has(s);
     h+=`<div class="dropdown-item" onclick="event.stopPropagation();toggleSource('${s.replace(/'/g,"\\'")}')">
