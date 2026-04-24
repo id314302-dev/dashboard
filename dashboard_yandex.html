@@ -96,11 +96,11 @@
   .modal-src-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;}
   .modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
 
-  .chart-wrap{display:flex;align-items:flex-end;gap:4px;height:140px;padding-top:20px;overflow-x:auto;}
-  .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:30px;gap:2px;}
-  .bar-val{font-size:11px;font-weight:600;color:var(--text);min-height:16px;text-align:center;}
-  .bar{width:100%;border-radius:4px 4px 0 0;}
-  .bar-lbl{font-size:10px;color:var(--text3);text-align:center;white-space:nowrap;margin-top:3px;}
+  .chart-wrap{display:flex;align-items:flex-end;gap:4px;height:160px;overflow-x:auto;padding-bottom:2px;}
+  .bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;min-width:28px;}
+  .bar-val{font-size:10px;font-weight:600;color:var(--text);text-align:center;margin-bottom:2px;white-space:nowrap;}
+  .bar{width:100%;border-radius:4px 4px 0 0;flex-shrink:0;}
+  .bar-lbl{font-size:10px;color:var(--text3);text-align:center;white-space:nowrap;margin-top:3px;flex-shrink:0;}
 
   .chart-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .empty{text-align:center;padding:32px;color:var(--text3);font-size:13px;}
@@ -499,22 +499,19 @@ function renderDashboard(){
 
   if(timeKeys.length>0){
     const srcFilterLabel=selectedSources.size===0?'Все источники':`${Object.keys(allData.srcStats).filter(s=>!selectedSources.has(s)).length} источн.`;
-    h+=`<div class="card"><div class="card-title">
-      <span>${chartLabel} — ${granLabels[chartGranularity]||'Авто'} <span style="font-size:11px;color:var(--text2);font-weight:400;">(${srcFilterLabel})</span></span>
-      <div class="chart-controls">
-        <div class="tab-group" style="padding:2px;">
-          ${['leads','qualLeads','deals'].map(m=>`<button class="tab${chartMetric===m?' active':''}" style="padding:4px 10px;font-size:12px;" onclick="chartMetric='${m}';renderDashboard()">${metricLabels[m]}</button>`).join('')}
+    let yearLegend='';
+    if(isMultiYear&&groupMode==='month'){yearLegend=`<span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">${years.map((y,i)=>`<span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${YEAR_COLORS[i%YEAR_COLORS.length]};"></span>${y}</span>`).join('')}</span>`;}
+    h+=`<div class="card">
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:600;">${chartLabel} — ${granLabels[chartGranularity]||'Авто'} <span style="font-size:11px;color:var(--text2);font-weight:400;">(${srcFilterLabel})</span></span>
+          ${yearLegend}
         </div>
-        <div class="tab-group" style="padding:2px;">
-          ${['auto','day','week','month','year'].map(g=>`<button class="tab${chartGranularity===g?' active':''}" style="padding:4px 10px;font-size:12px;" onclick="chartGranularity='${g}';renderDashboard()">${granLabels[g]}</button>`).join('')}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <div class="tab-group" style="padding:2px;">${['leads','qualLeads','deals'].map(m=>`<button class="tab${chartMetric===m?' active':''}" style="padding:4px 10px;font-size:12px;" onclick="chartMetric='${m}';renderDashboard()">${metricLabels[m]}</button>`).join('')}</div>
+          <div class="tab-group" style="padding:2px;">${['auto','day','week','month','year'].map(g=>`<button class="tab${chartGranularity===g?' active':''}" style="padding:4px 10px;font-size:12px;" onclick="chartGranularity='${g}';renderDashboard()">${granLabels[g]}</button>`).join('')}</div>
         </div>
       </div>`;
-    if(isMultiYear&&groupMode==='month'){
-      h+=`<span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">`;
-      years.forEach((y,i)=>{h+=`<span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${YEAR_COLORS[i%YEAR_COLORS.length]};"></span>${y}</span>`;});
-      h+=`</span>`;
-    }
-    h+=`</div>`;
 
     if(isMultiYear&&groupMode==='month'){
       const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
@@ -536,8 +533,8 @@ function renderDashboard(){
       });
       h+=`</div>`;
     } else {
-      h+=`<div class="chart-wrap">`;
-      timeKeys.slice(-31).forEach(k=>{const cnt=timeMap[k]||0;const bh=Math.max(Math.round(cnt/maxT*110),2);h+=`<div class="bar-col"><div class="bar-val">${cnt||''}</div><div class="bar" style="height:${bh}px;background:var(--accent);opacity:.75;"></div><div class="bar-lbl">${k}</div></div>`;});
+      h+=`<div class="chart-wrap" style="height:160px;">`;
+      timeKeys.slice(-60).forEach(k=>{const cnt=timeMap[k]||0;const bh=Math.max(Math.round(cnt/maxT*120),cnt>0?4:2);h+=`<div class="bar-col"><div class="bar-val" style="font-size:10px;">${cnt||''}</div><div class="bar" style="height:${bh}px;background:var(--accent);opacity:.75;flex-shrink:0;"></div><div class="bar-lbl">${k}</div></div>`;});
       h+=`</div>`;
     }
     h+=`</div>`;
