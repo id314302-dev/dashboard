@@ -177,11 +177,23 @@ let selectedSources=new Set();
 const DEFAULT_GROUPS=[
   {name:'Яндекс.Директ',sources:['Электронная почта (почта stdok)','Электронная почта (почта ekogrin1)','Звонок веб-сайт','Max - Max','Whatsapp(сайт) 3Д ограждения','Яндекс.Директ','Сайт Флексби','MAX мессенджер']}
 ];
+const DEFAULT_GROUPS_VERSION=2; // увеличивайте при изменении дефолтных групп
 function loadGroups(){
+  const savedVersion=parseInt(localStorage.getItem('src_groups_version')||'0');
   const saved=localStorage.getItem('src_groups');
-  if(saved) return JSON.parse(saved);
-  // Первый запуск — используем дефолтные группы
-  return JSON.parse(JSON.stringify(DEFAULT_GROUPS));
+  if(saved&&savedVersion>=DEFAULT_GROUPS_VERSION){
+    return JSON.parse(saved);
+  }
+  // Версия устарела или первый запуск — мержим дефолтные группы
+  const existing=saved?JSON.parse(saved):[];
+  DEFAULT_GROUPS.forEach(dg=>{
+    const idx=existing.findIndex(g=>g.name===dg.name);
+    if(idx>=0) existing[idx]=dg; // обновляем существующую
+    else existing.unshift(dg);   // добавляем новую
+  });
+  localStorage.setItem('src_groups',JSON.stringify(existing));
+  localStorage.setItem('src_groups_version',String(DEFAULT_GROUPS_VERSION));
+  return existing;
 }
 let groups=loadGroups();
 let dropdownOpen=false;
